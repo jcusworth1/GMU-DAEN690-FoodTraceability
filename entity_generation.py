@@ -101,12 +101,6 @@ def generate_entity_record(fake, entity_types=entity_types):
         'processor':generate_food_processing_company_name
     }
 
-    #Determine if they transform food or not
-    if b_type == 'grocery_no_food_bar' or b_type == 'distributor' or b_type == 'farm':
-        transform = False
-    else:
-        transform = True
-
 
     #Put the entity into a dictionary
     entity = {
@@ -116,13 +110,12 @@ def generate_entity_record(fake, entity_types=entity_types):
         'streetAddress':fake.street_address(),
         'city':fake.city(),
         'state':fake.state_abbr(),
-        'zip':fake.zipcode(),
-        'food_transform': transform
+        'zip':fake.zipcode()
     }
 
     return entity
 
-#Create a function to generate however many business entities that the user chooses
+#Create a function to generate however many business entities that the user chooses, the base amount is 10,000
 def generate_business_entities(n=10000):
     fake = Faker()
     entities = []
