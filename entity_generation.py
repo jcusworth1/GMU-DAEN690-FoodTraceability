@@ -10,7 +10,9 @@ entity_types = ['farm',
                 'restaurant',
                 'distributor',
                 'wholesaler',
-                'grocery_no_food_bar'
+                'grocery_no_food_bar',
+                'land_based_receiver',
+                'fish_farm'
                 ]
 
 #Generate the names for the different types of entities
@@ -84,6 +86,26 @@ def generate_food_processing_company_name():
     company_name = prefix + ' ' + suffix
     return company_name
 
+def generate_land_based_receiver_company_name():
+    prefixes = ['Ocean', 'Sea', 'Marine', 'Coastal', 'Aqua', 'Wave', 'Deep', 'Harbor', 'Fresh', 'Tidal']
+    suffixes = ['Seafoods', 'Fisheries', 'Maritime', 'Catches', 'Coast', 'Aquatics', 'Mariscos', 'Delights', 'Bay', 'Catchers']
+
+    prefix = random.choice(prefixes)
+    suffix = random.choice(suffixes)
+
+    company_name = prefix + ' ' + suffix
+    return company_name
+
+def generate_fish_farm_name():
+    prefixes = ["Ocean", "Aqua", "Marine", "Sea", "Blue", "Nautical"]
+    suffixes = ["Fish Farm", "Aquafarm", "Fishery", "Aquaculture", "Fish Haven"]
+
+    prefix = random.choice(prefixes)
+    suffix = random.choice(suffixes)
+
+    company_name = prefix + ' ' + suffix
+    return company_name
+
 #Function that generates a business entity record
 def generate_entity_record(fake, entity_types=entity_types):
     #Randomly select the entity name type
@@ -98,7 +120,9 @@ def generate_entity_record(fake, entity_types=entity_types):
         'distributor':generate_distributor_name,
         'packaging':generate_packaging_company_name,
         'restaurant':generate_restaurant_name,
-        'processor':generate_food_processing_company_name
+        'processor':generate_food_processing_company_name,
+        'land_based_receiver':generate_land_based_receiver_company_name,
+        'fish_farm':generate_fish_farm_name
     }
 
 
