@@ -10,9 +10,9 @@ entity_types = ['farm',
                 'restaurant',
                 'distributor',
                 'wholesaler',
-                'grocery_no_food_bar',
-                'land_based_receiver',
-                'fish_farm'
+                'groceryNoTransform',
+                'landBasedReceiver',
+                'seafoodFarm'
                 ]
 
 #Generate the names for the different types of entities
@@ -116,13 +116,13 @@ def generate_entity_record(fake, entity_types=entity_types):
         'farm':generate_farm_name,
         'wholesaler':generate_wholesaler_name,
         'grocery':generate_grocery_name,
-        'grocery_no_food_bar':generate_grocery_name,
+        'groceryNoTransform':generate_grocery_name,
         'distributor':generate_distributor_name,
         'packaging':generate_packaging_company_name,
         'restaurant':generate_restaurant_name,
         'processor':generate_food_processing_company_name,
-        'land_based_receiver':generate_land_based_receiver_company_name,
-        'fish_farm':generate_fish_farm_name
+        'landBasedReceiver':generate_land_based_receiver_company_name,
+        'seafoodFarm':generate_fish_farm_name
     }
 
 
