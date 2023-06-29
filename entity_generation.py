@@ -125,6 +125,38 @@ def generate_entity_record(fake, entity_types=entity_types):
         'seafoodFarm':generate_fish_farm_name
     }
 
+    states_with_commercial_fishing = [
+        "AK",  # Alaska
+        "LA",  # Louisiana
+        "WA",  # Washington
+        "VA",  # Virginia
+        "OR",  # Oregon
+        "MD",  # Maryland
+        "TX",  # Texas
+        "FL",  # Florida
+        "MA",  # Massachusetts
+        "NC",  # North Carolina
+        "ME",  # Maine
+        "MS",  # Mississippi
+        "CA",  # California
+        "NJ",  # New Jersey
+        "RI",  # Rhode Island
+        "NY",  # New York
+        "HI",  # Hawaii
+        "GA",  # Georgia
+        "AL",  # Alabama
+        "SC",  # South Carolina
+        "CT",  # Connecticut
+        "NH",  # New Hampshire
+        "DE",  # Delaware
+    ]
+
+    #Determine the state 
+    if b_type == 'seafoodFarm' or b_type == 'landBasedReceiver':
+        state = random.choice(states_with_commercial_fishing)
+    else:
+        state = fake.state_abbr()
+
 
     #Put the entity into a dictionary
     entity = {
@@ -133,7 +165,7 @@ def generate_entity_record(fake, entity_types=entity_types):
         'primaryPhone':fake.basic_phone_number(),
         'streetAddress':fake.street_address(),
         'city':fake.city(),
-        'state':fake.state_abbr(),
+        'state':state,
         'zip':fake.zipcode()
     }
 
