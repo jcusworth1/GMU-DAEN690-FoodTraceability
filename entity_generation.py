@@ -166,7 +166,8 @@ def generate_entity_record(fake, entity_types=entity_types):
         'streetAddress':fake.street_address(),
         'city':fake.city(),
         'state':state,
-        'zip':fake.zipcode()
+        'zip':fake.zipcode(),
+        'companyPrefix':f"{random.choice(['06','07','08','09','10','11','12','13'])}{random.randint(10000, 99999)}"
     }
 
     return entity
