@@ -209,7 +209,8 @@ def harvesting_cte(fake, ftl_item, farm, next_entity, field_name_list = field_na
         'phoneNumber' : phone_number,
         'contaminated' : contamination,  
         'gtin':farm.companyPrefix+'.'+str(random.randint(1000000, 9999999)),
-        'sgln':farm.gln
+        'sgln':farm.gln,
+        'eventID':farm.gln+'.'+str(random.randint(1000000, 9999999))
     }
 
     return harvesting_info
@@ -245,7 +246,9 @@ def cooling_cte(harvesting_info, ftl_item, facility, next_entity):
         'contaminated' : contaminated, 
         'gtin':harvesting_info['gtin'],
         'slgn':harvesting_info['sgln'],
-        'pgln':facility.gln
+        'pgln':facility.gln,
+        'eventID':facility.gln+'.'+str(random.randint(1000000, 9999999)),
+        'parentID':harvesting_info['eventID']
     }
 
     return cooling_info
@@ -291,7 +294,9 @@ def packaging_cte(fake, harvesting_info, cooling_info, ftl_item, facility):
         'contaminated':contaminated,
         'gtin':cooling_info['gtin'],
         'sgln':cooling_info['pgln'],
-        'pgln':facility.gln
+        'pgln':facility.gln,
+        'eventID':facility.gln+'.'+str(random.randint(1000000, 9999999)),
+        'parentID':cooling_info['eventID']
     }
 
     return packaging_info
@@ -320,7 +325,9 @@ def shipping_cte(previous_cte, next_entity, facility):
         'contaminated':contaminated,
         'gtin':previous_cte['gtin'],
         'slgn':previous_cte['pgln'],
-        'pgln':facility.gln
+        'pgln':facility.gln,
+        'eventID':facility.gln+'.'+str(random.randint(1000000, 9999999)),
+        'parentID':previous_cte['eventID']
     }
 
     return shipping_info
@@ -348,7 +355,9 @@ def receiving_cte(previous_cte, facility):
         'contaminated':contaminated,
         'gtin':previous_cte['gtin'],
         'sgln':previous_cte['pgln'],
-        'pgln':facility.gln
+        'pgln':facility.gln,
+        'eventID':facility.gln+'.'+str(random.randint(1000000, 9999999)),
+        'parentID':previous_cte['eventID']
     }
 
     return receiving_info
@@ -370,6 +379,8 @@ def transformation_cte(previous_cte, ftl_item, facility):
         previousUnitOfMeasure = previous_cte['unitOfMeasure']
         oldGtin = previous_cte['gtin']
         sgln = previous_cte['pgln']
+        eventID = facility.gln+'.'+str(random.randint(1000000, 9999999)),
+        parentID = previous_cte['eventID']
 
         
     except:
@@ -382,6 +393,8 @@ def transformation_cte(previous_cte, ftl_item, facility):
         previousUnitOfMeasure = random.choice([ 'oz', 'lbs', 'kg'])
         oldGtin = ''
         sgln = facility.gln
+        eventID = facility.gln+'.'+str(random.randint(1000000, 9999999)),
+        parentID = ''
     
     #transforming foods
     #fruit
@@ -457,7 +470,9 @@ def transformation_cte(previous_cte, ftl_item, facility):
         'gtin':facility.companyPrefix+'.'+str(random.randint(1000000, 9999999)),
         'sgln':sgln,
         'pgln':facility.gln,
-        'shortDescription':shortDescription
+        'shortDescription':shortDescription,
+        'eventID':eventID,
+        'parentID':parentID
     }
 
     return transformation_info
@@ -510,7 +525,9 @@ def first_land_based_receiver_cte(fake, ftl_item, facility):
         'contaminated':contaminated,
         'gtin':facility.companyPrefix+'.'+str(random.randint(1000000, 9999999)),
         'sgln':facility.gln,
-        'pgln':facility.gln
+        'pgln':facility.gln,
+        'eventID':facility.gln+'.'+str(random.randint(1000000, 9999999)),
+        'parentID':''
     }
 
     return first_land_based_receiver_info
