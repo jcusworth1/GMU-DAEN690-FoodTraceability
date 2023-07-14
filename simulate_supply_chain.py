@@ -16,7 +16,9 @@ foodCount = int(input("Enter how many food items you would like to simulate: "))
 ftl_df = pd.read_excel('Data_Generation/GMU-DAEN690-FoodTraceability/ftl_items.xlsx', sheet_name='Sheet1')
 entities_df = generate_business_entities(n=entityCount)
 #Add GLNs to each location
-entities_df['gln']=entities_df['companyPrefix']+'.'+str(random.randint(10000, 99999))
+endings = np.random.randint(10000,99999,size=len(entities_df))
+glnList = entities_df['companyPrefix'].values
+entities_df['gln']=[prefix + '.' + str(ending) for prefix,ending in zip(glnList,endings)]
 
 
 #Data Generation Functions
@@ -222,6 +224,7 @@ def harvesting_cte(fake, ftl_item, farm, next_entity, field_name_list = field_na
         'contaminated' : contamination,  
         'gtin':farm.companyPrefix+'.'+str(random.randint(1000000, 9999999)),
         'sgln':farm.gln,
+        'pgln':farm.gln,
         'eventID':farm.gln+'.'+str(random.randint(1000000, 9999999)),
         'parentID':''
     }
@@ -302,7 +305,7 @@ def packaging_cte(fake, harvesting_info, cooling_info, ftl_item, facility):
         'quantity' : quantity,
         'unitOfMeasure':cooling_info['unitOfMeasure'],
         'packageType': package_type,
-        'traceabilityLotCodeSourceLocation':facility.businessName,
+        'traceabilityLotCodeSourceLocation':facility.gln,
         'cteDate' : packaging_date,
         'referenceDocumentTypeNumber': generate_reference_document_type_number(facility,'IP WO'),
         'contaminated':contaminated,
@@ -480,7 +483,7 @@ def transformation_cte(previous_cte, ftl_item, facility):
         'quantityUsed':quantityUsed,
         'previousUnitOfMeasure':previousUnitOfMeasure,
         'traceabilityLotCode': traceabilityLotCode,
-        'traceabilityLotCodeSourceLocation': facility.businessName,
+        'traceabilityLotCodeSourceLocation': facility.gln,
         'cteDate': transformedDate,
         'productDescription': productDescription,
         'quantity': quantity,
@@ -544,7 +547,7 @@ def first_land_based_receiver_cte(fake, ftl_item, facility):
         'quantity':quantity,
         'unitOfMeasure':unitOfMeasure,
         'harvestDateAndLocation':harvestDateAndLocation,
-        'traceabilityLotCodeSourceLocation':facility.businessName,
+        'traceabilityLotCodeSourceLocation':facility.gln,
         'cteDate':str(dateLanded),
         'referenceDocumentTypeNumber': generate_reference_document_type_number(facility,'LANDING'),
         'contaminated':contaminated,
@@ -798,7 +801,7 @@ def cross_contaminate(dfs):
     for i in dfs['transformation'][dfs['transformation'].contaminated == 1].index:
 
         row = dfs['transformation'].iloc[i]
-        facility = row.dataSubmitter
+        facility = row.pgln
 
         #Determine dates of possible contamination
         try:
@@ -813,7 +816,7 @@ def cross_contaminate(dfs):
         #Filter the data for rows that were possibly impacted by the contamination
         filterData = dfs['transformation']
         filterData['cteDate'] = pd.to_datetime(filterData['cteDate'])
-        impacted = filterData[(filterData.dataSubmitter == facility)&(filterData.cteDate >= start_date)&(filterData.cteDate <= end_date)]
+        impacted = filterData[(filterData.pgln == facility)&(filterData.cteDate >= start_date)&(filterData.cteDate <= end_date)]
         if len(impacted) > 0:
 
             #Determine if it will spread to the node or not
