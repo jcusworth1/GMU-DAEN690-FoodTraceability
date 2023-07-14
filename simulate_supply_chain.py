@@ -19,6 +19,7 @@ entities_df = generate_business_entities(n=entityCount)
 endings = np.random.randint(10000,99999,size=len(entities_df))
 glnList = entities_df['companyPrefix'].values
 entities_df['gln']=[prefix + '.' + str(ending) for prefix,ending in zip(glnList,endings)]
+entities_df.to_csv('businessEntities.csv',index=False)
 
 
 #Data Generation Functions
