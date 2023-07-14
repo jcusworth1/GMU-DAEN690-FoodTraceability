@@ -6,6 +6,7 @@ from faker import Faker
 from entity_generation import generate_business_entities
 from datetime import datetime, timedelta
 from tqdm import tqdm
+import hashlib
 
 #Take in User Input
 entityCount = int(input("Enter how many business entities exist in the supply chain: "))
@@ -149,6 +150,17 @@ def generate_supply_chain(ftl_item):
 
     return chain
 
+#Data Formatting Functions
+def generate_reference_document_type_number(facility,event):
+    reference_type_number = f"urn:epcglobal:epcis:{event}.{facility.companyPrefix}"
+    return reference_type_number
+
+def generate_traceability_lot_code(data,timestamp):
+    hash_input = f"{data}{timestamp}"
+    hash_value = hashlib.sha1(hash_input.encode()).hexdigest()
+    lot_code = f"urn:epc:id:sgtin:{hash_value}"
+    return lot_code
+
 #CTE Functions 
 
 field_name_list = ['Field',
@@ -210,7 +222,8 @@ def harvesting_cte(fake, ftl_item, farm, next_entity, field_name_list = field_na
         'contaminated' : contamination,  
         'gtin':farm.companyPrefix+'.'+str(random.randint(1000000, 9999999)),
         'sgln':farm.gln,
-        'eventID':farm.gln+'.'+str(random.randint(1000000, 9999999))
+        'eventID':farm.gln+'.'+str(random.randint(1000000, 9999999)),
+        'parentID':''
     }
 
     return harvesting_info
@@ -245,7 +258,7 @@ def cooling_cte(harvesting_info, ftl_item, facility, next_entity):
         'phoneNumber' : phone_number,
         'contaminated' : contaminated, 
         'gtin':harvesting_info['gtin'],
-        'slgn':harvesting_info['sgln'],
+        'sgln':harvesting_info['sgln'],
         'pgln':facility.gln,
         'eventID':facility.gln+'.'+str(random.randint(1000000, 9999999)),
         'parentID':harvesting_info['eventID']
@@ -262,7 +275,8 @@ def packaging_cte(fake, harvesting_info, cooling_info, ftl_item, facility):
     quantity = fake.random_int(min=1, max=1000)
     unit_of_measure = fake.random_element(elements=('kg', 'g', 'lbs', 'Dozen'))
     packaging_date = str((datetime.strptime(cooling_info['cteDate'], '%Y-%m-%d') + timedelta(days=random.randint(0,3))).date())
-    traceability_lot_code = fake.bothify(text='??-####', letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+    tLotData = data_submitter + ftl_item.Food.values[0] + str(quantity)
+    traceability_lot_code = generate_traceability_lot_code(tLotData,packaging_date)
     product_description = harvesting_info['dataSubmitter'] + ' ' + harvesting_info['commodity'] + ', ' + str(fake.random_int(min=1, max= 50)) + unit_of_measure + ' case'
     contaminated = cooling_info['contaminated']
 
@@ -290,7 +304,7 @@ def packaging_cte(fake, harvesting_info, cooling_info, ftl_item, facility):
         'packageType': package_type,
         'traceabilityLotCodeSourceLocation':facility.businessName,
         'cteDate' : packaging_date,
-        'referenceDocumentTypeNumber': 'IP WO ' + str(random.randint(10000,50000)),
+        'referenceDocumentTypeNumber': generate_reference_document_type_number(facility,'IP WO'),
         'contaminated':contaminated,
         'gtin':cooling_info['gtin'],
         'sgln':cooling_info['pgln'],
@@ -306,6 +320,7 @@ def shipping_cte(previous_cte, next_entity, facility):
     shippedDate = str((datetime.strptime(previous_cte['cteDate'], '%Y-%m-%d') + timedelta(days=random.randint(0,3))).date())
     productDescription = previous_cte['productDescription']
     contaminated = previous_cte['contaminated']
+    bizTransactionType = random.choice(['ASN','DESADV','BOL','SHP'])
 
     if contaminated == 0:
         if random.randint(0,6000) == 1:
@@ -321,10 +336,10 @@ def shipping_cte(previous_cte, next_entity, facility):
         'previousSourceLocation': previous_cte['dataSubmitter'],
         'cteDate': shippedDate,
         'traceabilityLotCodeSourceLocation': previous_cte['traceabilityLotCodeSourceLocation'],
-        'referenceDocumentTypeNumber': 'BOL ' + str(random.randint(10000,50000)),
+        'referenceDocumentTypeNumber': generate_reference_document_type_number(facility,bizTransactionType),
         'contaminated':contaminated,
         'gtin':previous_cte['gtin'],
-        'slgn':previous_cte['pgln'],
+        'sgln':previous_cte['pgln'],
         'pgln':facility.gln,
         'eventID':facility.gln+'.'+str(random.randint(1000000, 9999999)),
         'parentID':previous_cte['eventID']
@@ -336,6 +351,8 @@ def receiving_cte(previous_cte, facility):
     receivingDate = str((datetime.strptime(previous_cte['cteDate'], '%Y-%m-%d') + timedelta(days=random.randint(0,3))).date())
 
     contaminated = previous_cte['contaminated']
+    bizTransactionType = random.choice(['BOL','RECADV','RECEIPT','RCV'])
+    
 
     if contaminated == 0:
         if random.randint(0,6000) == 1:
@@ -351,7 +368,7 @@ def receiving_cte(previous_cte, facility):
         'receivingLocation': facility.businessName,
         'cteDate': receivingDate,
         'traceabilityLotCodeSourceLocation': previous_cte['traceabilityLotCodeSourceLocation'],
-        'referenceDocumentTypeNumber': 'BOL ' + str(random.randint(10000,50000)),
+        'referenceDocumentTypeNumber': generate_reference_document_type_number(facility,bizTransactionType),
         'contaminated':contaminated,
         'gtin':previous_cte['gtin'],
         'sgln':previous_cte['pgln'],
@@ -369,17 +386,19 @@ def transformation_cte(previous_cte, ftl_item, facility):
     quantity = random.randint(1,1000)
     quantityUsed = random.randint(quantity,2000)
     unitOfMeasure = random.choice([ 'oz', 'lbs', 'kg'])
-    traceabilityLotCode = fake.bothify(text='??-####', letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+    dataSubmitter = facility.businessName
+    tLotData = dataSubmitter + ftl_item.Food.values[0] + str(quantity)
     
     #generating transformation date and lot codes - this is dependent on whether there was a previous cte or not
     try: 
         transformedDate = str((datetime.strptime(previous_cte['cteDate'], '%Y-%m-%d') + timedelta(days=random.randint(0,3))).date())
+        traceabilityLotCode = generate_traceability_lot_code(tLotData,transformedDate)
         oldTraceabilityLotCode = previous_cte['traceabilityLotCode']
         oldProductDescription = previous_cte['productDescription']
         previousUnitOfMeasure = previous_cte['unitOfMeasure']
         oldGtin = previous_cte['gtin']
         sgln = previous_cte['pgln']
-        eventID = facility.gln+'.'+str(random.randint(1000000, 9999999)),
+        eventID = facility.gln+'.'+str(random.randint(1000000, 9999999))
         parentID = previous_cte['eventID']
 
         
@@ -388,12 +407,12 @@ def transformation_cte(previous_cte, ftl_item, facility):
         end_date = datetime.now()
         transformedDate = str(fake.date_between(start_date=start_date, end_date=end_date))
         oldProductDescription = ''
-        oldTraceabilityLotCode = traceabilityLotCode
-        traceabilityLotCode = fake.bothify(text='??-####', letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+        oldTraceabilityLotCode = generate_traceability_lot_code(dataSubmitter + ftl_item.Food.values[0] + str(random.randint(3000,10000)),start_date)
+        traceabilityLotCode = generate_traceability_lot_code(tLotData,transformedDate)
         previousUnitOfMeasure = random.choice([ 'oz', 'lbs', 'kg'])
         oldGtin = ''
         sgln = facility.gln
-        eventID = facility.gln+'.'+str(random.randint(1000000, 9999999)),
+        eventID = facility.gln+'.'+str(random.randint(1000000, 9999999))
         parentID = ''
     
     #transforming foods
@@ -451,9 +470,11 @@ def transformation_cte(previous_cte, ftl_item, facility):
     if contaminated == 0:
         if random.randint(0,6000) == 1:
             contaminated = 1
+
+    bizTransactionType = random.choice(['TRF','TE','ADJUSTMENT'])
     
     transformation_info = {
-        'dataSubmitter': facility.businessName,
+        'dataSubmitter': dataSubmitter,
         'oldTraceabilityLotCode': oldTraceabilityLotCode,
         'oldProductDescription':oldProductDescription,
         'quantityUsed':quantityUsed,
@@ -464,7 +485,7 @@ def transformation_cte(previous_cte, ftl_item, facility):
         'productDescription': productDescription,
         'quantity': quantity,
         'unitOfMeasure': unitOfMeasure,
-        'referenceDocumentTypeNumber': 'BOL ' + str(random.randint(10000,50000)),
+        'referenceDocumentTypeNumber': generate_reference_document_type_number(facility,bizTransactionType),
         'contaminated':contaminated,
         'inputGtin':oldGtin,
         'gtin':facility.companyPrefix+'.'+str(random.randint(1000000, 9999999)),
@@ -486,6 +507,8 @@ def first_land_based_receiver_cte(fake, ftl_item, facility):
 
     dateLanded = secondHarvestDate + timedelta(days=random.randint(1,3))
 
+    dataSubmitter =facility.businessName
+
     #Determine Harvest Location
     secondLine = 'Major Fishing Area ' + str(random.randint(1,10))
 
@@ -505,15 +528,17 @@ def first_land_based_receiver_cte(fake, ftl_item, facility):
     unitOfMeasure = random.choice(['kg', 'lb'])
 
     #Determine the traceability lot code
-    traceability_lot_code = fake.bothify(text='??-####', letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+    tLotData = dataSubmitter + ftl_item.Food.values[0] + str(quantity)
+    traceability_lot_code = generate_traceability_lot_code(tLotData,str(dateLanded))
 
     #Contamination
     contaminated = 0
     if random.randint(0,2000) == 1:
         contaminated = 1
 
+
     first_land_based_receiver_info = {
-        'dataSubmitter':facility.businessName,
+        'dataSubmitter':dataSubmitter,
         'traceabilityLotCode':traceability_lot_code,
         'productDescription':ftl_item.Food.values[0],
         'quantity':quantity,
@@ -521,7 +546,7 @@ def first_land_based_receiver_cte(fake, ftl_item, facility):
         'harvestDateAndLocation':harvestDateAndLocation,
         'traceabilityLotCodeSourceLocation':facility.businessName,
         'cteDate':str(dateLanded),
-        'referenceDocumentTypeNumber': 'Landing Record: ' + str(random.randint(10000,50000)),
+        'referenceDocumentTypeNumber': generate_reference_document_type_number(facility,'LANDING'),
         'contaminated':contaminated,
         'gtin':facility.companyPrefix+'.'+str(random.randint(1000000, 9999999)),
         'sgln':facility.gln,
