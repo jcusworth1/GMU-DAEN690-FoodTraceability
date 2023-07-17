@@ -764,7 +764,7 @@ def generate_data(ftl_df, entities_df, n=10000):
         indexes = []
         for entity_type in sc:
             try:
-                entity = entities_df[entities_df.businessType == entity_type].sample().index.values[0]
+                entity = entities_df[entities_df.businessType == entity_type].sample(weights='sizeWeight',replace=True).index.values[0]
                 indexes.append(entity)
             except:
                 pass

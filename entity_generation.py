@@ -157,6 +157,10 @@ def generate_entity_record(fake, entity_types=entity_types):
     else:
         state = fake.state_abbr()
 
+    #Determine the size
+    sizeWeights = [.8,.15,.05]
+    weights = [.1,.3,.6]
+
 
     #Put the entity into a dictionary
     entity = {
@@ -167,7 +171,8 @@ def generate_entity_record(fake, entity_types=entity_types):
         'city':fake.city(),
         'state':state,
         'zip':fake.zipcode(),
-        'companyPrefix':f"{random.choice(['06','07','08','09','10','11','12','13'])}{random.randint(10000, 99999)}"
+        'companyPrefix':f"{random.choice(['06','07','08','09','10','11','12','13'])}{random.randint(10000, 99999)}",
+        'sizeWeight':random.choices(sizeWeights,weights)[0]
     }
 
     return entity
