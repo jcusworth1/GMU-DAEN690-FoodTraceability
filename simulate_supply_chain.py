@@ -154,15 +154,15 @@ def generate_supply_chain(ftl_item):
     return chain
 
 #Data Formatting Functions
+def generate_traceability_lot_code(companyPrefix, gtin, tLotData, timestamp):
+    hash_input = f"{tLotData}{timestamp}"
+    hash_value = hashlib.sha1(hash_input.encode()).hexdigest()
+    lot_code = f"urn:epc:class:lgtin:{companyPrefix}.{gtin.split('.')[1]}.{hash_value[:17]}"
+    return lot_code
+
 def generate_reference_document_type_number(facility,event):
     reference_type_number = f"urn:epcglobal:epcis:{event}.{facility.companyPrefix}"
     return reference_type_number
-
-def generate_traceability_lot_code(data,timestamp):
-    hash_input = f"{data}{timestamp}"
-    hash_value = hashlib.sha1(hash_input.encode()).hexdigest()
-    lot_code = f"urn:epc:id:sgtin:{hash_value}"
-    return lot_code
 
 #CTE Functions 
 
@@ -223,7 +223,7 @@ def harvesting_cte(fake, ftl_item, farm, next_entity, field_name_list = field_na
         'cteDate' : date_harvested,
         'phoneNumber' : phone_number,
         'contaminated' : contamination,  
-        'gtin':farm.companyPrefix+'.'+str(random.randint(1000000, 9999999)),
+        'gtin':farm.companyPrefix+'.'+str(random.randint(100000, 999999)),
         'sgln':farm.gln,
         'pgln':farm.gln,
         'eventID':farm.gln+'.'+str(random.randint(1000000, 9999999)),
@@ -280,7 +280,7 @@ def packaging_cte(fake, harvesting_info, cooling_info, ftl_item, facility):
     unit_of_measure = fake.random_element(elements=('kg', 'g', 'lbs', 'Dozen'))
     packaging_date = str((datetime.strptime(cooling_info['cteDate'], '%Y-%m-%d') + timedelta(days=random.randint(0,3))).date())
     tLotData = data_submitter + ftl_item.Food.values[0] + str(quantity)
-    traceability_lot_code = generate_traceability_lot_code(tLotData,packaging_date)
+    traceability_lot_code = generate_traceability_lot_code(facility.companyPrefix,cooling_info['gtin'],tLotData,packaging_date)
     product_description = harvesting_info['dataSubmitter'] + ' ' + harvesting_info['commodity'] + ', ' + str(fake.random_int(min=1, max= 50)) + unit_of_measure + ' case'
     contaminated = cooling_info['contaminated']
 
@@ -396,7 +396,8 @@ def transformation_cte(previous_cte, ftl_item, facility):
     #generating transformation date and lot codes - this is dependent on whether there was a previous cte or not
     try: 
         transformedDate = str((datetime.strptime(previous_cte['cteDate'], '%Y-%m-%d') + timedelta(days=random.randint(0,3))).date())
-        traceabilityLotCode = generate_traceability_lot_code(tLotData,transformedDate)
+        newGtin = facility.companyPrefix+'.'+str(random.randint(100000, 999999))
+        traceabilityLotCode = generate_traceability_lot_code(facility.companyPrefix,newGtin,tLotData,transformedDate)
         oldTraceabilityLotCode = previous_cte['traceabilityLotCode']
         oldProductDescription = previous_cte['productDescription']
         previousUnitOfMeasure = previous_cte['unitOfMeasure']
@@ -411,8 +412,12 @@ def transformation_cte(previous_cte, ftl_item, facility):
         end_date = datetime.now()
         transformedDate = str(fake.date_between(start_date=start_date, end_date=end_date))
         oldProductDescription = ''
-        oldTraceabilityLotCode = generate_traceability_lot_code(dataSubmitter + ftl_item.Food.values[0] + str(random.randint(3000,10000)),start_date)
-        traceabilityLotCode = generate_traceability_lot_code(tLotData,transformedDate)
+        #oldtLotData = dataSubmitter + ftl_item.Food.values[0] + str(random.randint(3000,10000))
+        #oldCompanyPrefix = f"{random.choice(['06','07','08','09','10','11','12','13'])}{random.randint(10000, 99999)}"
+        #oldTraceabilityLotCode = generate_traceability_lot_code(oldCompanyPrefix,oldGt,oldtLotData,start_date)
+        oldTraceabilityLotCode = ''
+        newGtin = facility.companyPrefix+'.'+str(random.randint(100000, 999999))
+        traceabilityLotCode = generate_traceability_lot_code(facility.companyPrefix,newGtin,tLotData,transformedDate)
         previousUnitOfMeasure = random.choice([ 'oz', 'lbs', 'kg'])
         oldGtin = ''
         sgln = facility.gln
@@ -492,7 +497,7 @@ def transformation_cte(previous_cte, ftl_item, facility):
         'referenceDocumentTypeNumber': generate_reference_document_type_number(facility,bizTransactionType),
         'contaminated':contaminated,
         'inputGtin':oldGtin,
-        'gtin':facility.companyPrefix+'.'+str(random.randint(1000000, 9999999)),
+        'gtin':newGtin,
         'sgln':sgln,
         'pgln':facility.gln,
         'shortDescription':shortDescription,
@@ -533,7 +538,8 @@ def first_land_based_receiver_cte(fake, ftl_item, facility):
 
     #Determine the traceability lot code
     tLotData = dataSubmitter + ftl_item.Food.values[0] + str(quantity)
-    traceability_lot_code = generate_traceability_lot_code(tLotData,str(dateLanded))
+    gtin = facility.companyPrefix+'.'+str(random.randint(100000, 999999))
+    traceability_lot_code = generate_traceability_lot_code(facility.companyPrefix,gtin,tLotData,str(dateLanded))
 
     #Contamination
     contaminated = 0
@@ -552,7 +558,7 @@ def first_land_based_receiver_cte(fake, ftl_item, facility):
         'cteDate':str(dateLanded),
         'referenceDocumentTypeNumber': generate_reference_document_type_number(facility,'LANDING'),
         'contaminated':contaminated,
-        'gtin':facility.companyPrefix+'.'+str(random.randint(1000000, 9999999)),
+        'gtin':gtin,
         'sgln':facility.gln,
         'pgln':facility.gln,
         'eventID':facility.gln+'.'+str(random.randint(1000000, 9999999)),
@@ -839,6 +845,15 @@ def cross_contaminate(dfs):
                 dfs[cte].loc[dfs[cte][dfs[cte].traceabilityLotCode.isin(infectedLots)].index,'contaminated'] = 1
     return dfs
 
+#Add EPCIS Formatting to fields that lacked it previously
+def add_epcis_formatting(cte_data):
+    for name in list(cte_data.keys()):
+        cte_data[name]['gtin'] = 'urn:epc:idpat:sgtin:' + cte_data[name]['gtin']
+        cte_data[name]['sgln'] = 'urn:epc:id:sgln:' + cte_data[name]['sgln']
+        cte_data[name] ['pgln'] = 'urn:epc:id:pgln:' + cte_data[name]['pgln']
+    return cte_data
+
+#Create CSV files of the data
 #Create CSV files of the data
 def create_dfs(data, create_csv = False):
     cte_data = {
@@ -862,10 +877,13 @@ def create_dfs(data, create_csv = False):
     #Cross contaminate
     cte_data = cross_contaminate(cte_data)
 
+    #Add EPCIS formatting
+    cte_data = add_epcis_formatting(cte_data)
+
     #Create a csv of data
     if create_csv == True:
         for event in list(cte_data.keys()):
-            cte_data[event].to_csv(f'{event}.csv',index=False) #Uncomment this to create a csv
+            cte_data[event].to_csv(f'{event}.csv',index=False)
 
     return cte_data
 
