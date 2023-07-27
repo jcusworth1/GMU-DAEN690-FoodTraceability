@@ -4,7 +4,11 @@ Foodborne illness is a significant issue worldwide. The U.S. Centers for Disease
 
 ## Data Generation
 
-In order to generate data, run the file simulate_supply_chain.py.
+In order to generate data, download the repository to your local drive. 
+
+Then, change your working directory to GMU-DAEN690-FoodTraceability. 
+
+Now, run the file simulate_supply_chain.py.
 
 This can either be done in a terminal or in a code editor. Either way, the terminal will ask you to input two values:
 
