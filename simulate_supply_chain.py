@@ -851,6 +851,10 @@ def add_epcis_formatting(cte_data):
         cte_data[name]['gtin'] = 'urn:epc:idpat:sgtin:' + cte_data[name]['gtin']
         cte_data[name]['sgln'] = 'urn:epc:id:sgln:' + cte_data[name]['sgln']
         cte_data[name] ['pgln'] = 'urn:epc:id:pgln:' + cte_data[name]['pgln']
+        try:
+            cte_data[name]['traceabilityLotCodeSourceLocation'] = 'urn:epc:id:pgln:' + cte_data[name]['traceabilityLotCodeSourceLocation']
+        except:
+            pass
     return cte_data
 
 #Create CSV files of the data
