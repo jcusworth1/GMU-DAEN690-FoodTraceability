@@ -13,7 +13,7 @@ entityCount = int(input("Enter how many business entities exist in the supply ch
 foodCount = int(input("Enter how many food items you would like to simulate: "))
 
 #Load the core data
-ftl_df = pd.read_excel('C:/DAEN690/GMU-DAEN690-FoodTraceability/ftl_items.xlsx', sheet_name='Sheet1')
+ftl_df = pd.read_excel('ftl_items.xlsx', sheet_name='Sheet1')
 entities_df = generate_business_entities(n=entityCount)
 #Add GLNs to each location
 endings = np.random.randint(10000,99999,size=len(entities_df))
