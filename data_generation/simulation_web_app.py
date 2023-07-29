@@ -15,6 +15,9 @@ app = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
 #Create the date validator
 date_pattern = r"^\d{4}-\d{2}-\d{2}$"
 
+food = pd.read_excel('data_generation/ftl_items.xlsx',sheet_name='Sheet1')
+unique_food_names = food.Category.unique()
+
 # Define the layout of the web application
 app.layout = dbc.Container([
     html.H1("CTE Data Generation", className="my-4"),
@@ -42,9 +45,33 @@ style={"margin-top": "20px"}),
 ],
 style={"margin-top": "20px"}),
     html.Div([
-        dbc.Label('Selected Food Traceability List Items'),
-        dbc.Input(id='food_file', type='text', value='ftl_items.xlsx'),
-        dbc.FormText('File for the Selected Foods')
+        dbc.Label('Select Food Categories - Default All'),
+        dbc.Button('Select Food',id='food-select-btn', type='number', value='6000', class_name='mx-2'),
+        dbc.Offcanvas(
+            children=[
+                html.H1("Food Categories"),
+                dcc.Checklist(
+                    id='food-checklist',
+                    options=[{'label': food, 'value': food} for food in unique_food_names],
+                    value=unique_food_names,
+                    labelStyle={'display': 'block'}
+                ),
+                dbc.Button(
+                    "Select All",
+                    id='select-unselect-all',
+                    color='primary',
+                    style={'marginRight': '10px'}
+                )
+            ],
+                        id = 'offcanvas',
+                        is_open=False
+        )
+],
+style={"margin-top": "20px"}),
+    html.Div([
+        dbc.Label('Contamination Odds (1 in X)'),
+        dbc.Input(id='contamination', type='number', value='6000'),
+        dbc.FormText('Higher means less likely to be contaminated')
 ],
 style={"margin-top": "20px"}),
     dbc.Row(
@@ -54,6 +81,36 @@ style={"margin-top": "20px"}),
     dbc.Spinner(html.Div(id='output'))
 ])
 
+#Callback for opening the offcanvas food selection
+@app.callback(
+    Output("offcanvas", "is_open"),
+    Input("food-select-btn", "n_clicks"),
+    [State("offcanvas", "is_open")],
+)
+def toggle_offcanvas(n1, is_open):
+    if n1:
+        return not is_open
+    return is_open
+
+#Callback for selecting or unselecting all foods
+@app.callback(
+    [Output('food-checklist', 'value'),
+     Output('select-unselect-all', 'children')],
+    [Input('select-unselect-all', 'n_clicks')],
+    [State('food-checklist', 'options'),
+     State('food-checklist', 'value')]
+)
+def select_unselect_all_food_names(n_clicks, food_options, current_values):
+    if n_clicks is None:
+        return dash.no_update, 'Unselect All'
+
+    select_all = current_values == []
+    if select_all:
+        return [food['value'] for food in food_options], 'Unselect All'
+    else:
+        return [], 'Select All'
+
+
 # Define the callback to run the simulation when the button is clicked, return the datatable div
 @app.callback(
               Output('output', 'children'),
@@ -62,10 +119,10 @@ style={"margin-top": "20px"}),
               Input('foodCount', 'value'),
               Input('startDate', 'value'),
               Input('endDate', 'value'),
-              Input('food_file', 'value'),
-              progress=[Output('progress-bar','value'),Output('progress-bar','max')],
+              Input('contamination', 'value'),
+              Input('food-checklist','value'),
               prevent_initial_callback=True)
-def run_simulation(n_clicks, entityCount, foodCount, startDate, endDate, food_file):
+def run_simulation(n_clicks, entityCount, foodCount, startDate, endDate, contamination,selectedFoods):
     if n_clicks > 0:
         # Convert input values to appropriate types if needed
         entityCount = int(entityCount)
@@ -77,7 +134,8 @@ def run_simulation(n_clicks, entityCount, foodCount, startDate, endDate, food_fi
             foodCount=foodCount,
             startDate=startDate,
             endDate=endDate,
-            food_file=food_file,
+            contamination_rate=contamination,
+            selectedFoods=selectedFoods,
             create_csv=False,
         ).run_simulation()
 

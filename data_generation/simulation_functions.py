@@ -8,22 +8,19 @@ from tqdm import tqdm
 import hashlib
 
 class supply_chain_simulation:
-    def __init__(self, entityCount,foodCount, startDate, endDate, food_file, create_csv):
+    def __init__(self, entityCount,foodCount, startDate, endDate, contamination_rate, selectedFoods, create_csv):
         self.entityCount = entityCount
         self.foodCount = foodCount
         self.startDate = startDate
         self.endDate = endDate
-        self.food_file = food_file
+        self.contamination_rate = contamination_rate
+        self.selectedFoods = selectedFoods
         self.create_csv = create_csv
 
     def run_simulation(self):
         #Load the core data
-        if '.xlsx' in self.food_file:
-            ftl_df = pd.read_excel(self.food_file, sheet_name='Sheet1')
-        elif '.csv' in self.food_file:
-            ftl_df = pd.read_csv(self.food_file)
-        else:
-            print('Please give a .csv for .xlsx with sheet_name=Sheet1')
+        ftl_df = pd.read_excel('data_generation/ftl_items.xlsx', sheet_name='Sheet1')
+        ftl_df = ftl_df[ftl_df.Category.isin(self.selectedFoods)]
         entities_df = generate_business_entities(n=self.entityCount)
         #Add GLNs to each location
         endings = np.random.randint(10000,99999,size=len(entities_df))
@@ -35,6 +32,8 @@ class supply_chain_simulation:
         fake = Faker()
         global startDate
         global endDate
+        global contaminationRate
+        contaminationRate = int(self.contamination_rate)
         startDate = datetime.strptime(self.startDate, '%Y-%m-%d')
         endDate = datetime.strptime(self.endDate, '%Y-%m-%d')
         data = generate_data(ftl_df, entities_df, n=self.foodCount)
@@ -217,7 +216,7 @@ def harvesting_cte(fake, ftl_item, farm, next_entity):
     
 
     #Contamination
-    cont_int = random.randint(0,6000)
+    cont_int = random.randint(0,contaminationRate)
     if cont_int == 1:
         contamination = 1
     else:
@@ -267,7 +266,7 @@ def cooling_cte(harvesting_info, ftl_item, facility, next_entity):
     contaminated = harvesting_info['contaminated']
 
     if contaminated == 0:
-        if random.randint(0,6000) == 1:
+        if random.randint(0,contaminationRate) == 1:
             contaminated = 1
     
     #Need to add location description of farm where it was harvested
@@ -306,7 +305,7 @@ def packaging_cte(fake, harvesting_info, cooling_info, ftl_item, facility):
     contaminated = cooling_info['contaminated']
 
     if contaminated == 0:
-        if random.randint(0,6000) == 1:
+        if random.randint(0,contaminationRate) == 1:
             contaminated = 1
 
 
@@ -348,7 +347,7 @@ def shipping_cte(previous_cte, next_entity, facility):
     bizTransactionType = random.choice(['ASN','DESADV','BOL','SHP'])
 
     if contaminated == 0:
-        if random.randint(0,6000) == 1:
+        if random.randint(0,contaminationRate) == 1:
             contaminated = 1
 
     shipping_info = {
@@ -380,7 +379,7 @@ def receiving_cte(previous_cte, facility):
     
 
     if contaminated == 0:
-        if random.randint(0,6000) == 1:
+        if random.randint(0,contaminationRate) == 1:
             contaminated = 1
 
     receiving_info = {
@@ -498,7 +497,7 @@ def transformation_cte(previous_cte, ftl_item, facility):
         contaminated = 0
 
     if contaminated == 0:
-        if random.randint(0,6000) == 1:
+        if random.randint(0,contaminationRate) == 1:
             contaminated = 1
 
     bizTransactionType = random.choice(['TRF','TE','ADJUSTMENT'])
@@ -564,7 +563,7 @@ def first_land_based_receiver_cte(fake, ftl_item, facility):
 
     #Contamination
     contaminated = 0
-    if random.randint(0,2000) == 1:
+    if random.randint(0,contaminationRate) == 1:
         contaminated = 1
 
 
@@ -869,9 +868,12 @@ def cross_contaminate(dfs):
 #Add EPCIS Formatting to fields that lacked it previously
 def add_epcis_formatting(cte_data):
     for name in list(cte_data.keys()):
-        cte_data[name]['gtin'] = 'urn:epc:idpat:sgtin:' + cte_data[name]['gtin']
-        cte_data[name]['sgln'] = 'urn:epc:id:sgln:' + cte_data[name]['sgln']
-        cte_data[name] ['pgln'] = 'urn:epc:id:pgln:' + cte_data[name]['pgln']
+        try:
+            cte_data[name]['gtin'] = 'urn:epc:idpat:sgtin:' + cte_data[name]['gtin']
+            cte_data[name]['sgln'] = 'urn:epc:id:sgln:' + cte_data[name]['sgln']
+            cte_data[name] ['pgln'] = 'urn:epc:id:pgln:' + cte_data[name]['pgln']
+        except:
+            pass
     return cte_data
 
 #Create CSV files of the data
