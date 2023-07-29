@@ -6,15 +6,53 @@ Foodborne illness is a significant issue worldwide. The U.S. Centers for Disease
 
 In order to generate data, download the repository to your local drive. 
 
-Then, change your working directory to GMU-DAEN690-FoodTraceability. 
+There are three ways to generate data:
 
-Now, run the file simulate_supply_chain.py.
+1. Web App User Interface
+2. Terminal Application
+3. Python API
 
-This can either be done in a terminal or in a code editor. Either way, the terminal will ask you to input two values:
+# Web App User Interface
 
-1. Enter how many business entities exist in the supply chain
-2. Enter how many food items you would like to simulate
+In a terminal or code editor, change your working directory to GMU-DAEN690-FoodTraceability
 
-For each input, enter a number and press enter.
+Install data_generation/requirements.txt
 
-After you input both values, a progress bar will appear as the data is generated
+The Web App User Interface is built using Dash in Python. The file is data_generation/simulation_web_app.py.
+
+To set this up on your own machine:
+1. Run data_generation/simulation_web_app.py in either your terminal or code editor.
+2. In a web browser go to http://localhost:8050
+
+# Terminal Application
+
+In a terminal or code editor, change your working directory to GMU-DAEN690-FoodTraceability
+
+Install data_generation/requirements.txt
+
+Run data_generation/simulate_supply_chain.py
+
+In the terminal, answer each question with an integer and press Enter.
+
+# Python API
+
+In data_generation, there is a file titled simulation_functions.
+
+To use this in Python code, do:
+
+from simulation_functions import supply_chain_simulation
+
+supply_chain_simulation is an object that has attributes:
+- entityCount (INT): the number of business entities in the supply chain 
+- foodCount (INT): the number of food items to simulate 
+- startDate (STR): the earliest date for an item to begin going through the supply chain. Must be in format YYYY-MM-DD 
+- endDate (STR): the latest date for an item to begin going through the supply chain. Must be in format YYYY-MM-DD 
+- contamination_rate (INT): the odds that a food item will be randomly contaminated at each event (this does not include cross-contamination). The odds are 1 in X. So if you put X=10,000, it is a 1 in 10,000 chance that the item will be contaminated. 
+- selectedFoods (LIST): a list of the food categories to use in data generation. This is from the FDA Food Traceability List. The possibilities are exactly: Herbs (fresh), Leafy greens (fresh), Cheese, Nut butters, Melons, Peppers, Sprouts, Tropical Tree Fruits, Seafood, Ready-to-eat deli salads, Tomatoes, Shell eggs, Cucumbers (fresh), and Fruit.
+- create_csv (BOOL): this is whether or not to automatically download csv files of the data
+
+Once you have created the object, simply perform the method run_simulation().
+
+
+
+
