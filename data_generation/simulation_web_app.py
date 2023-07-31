@@ -24,12 +24,12 @@ app.layout = dbc.Container([
     html.Div([
         dbc.Label('Business Entities Count'),
         dbc.Input(id='entityCount', type='number', value=500),
-        dbc.FormText('Input how Business Entities will be in the Supply Chain')
+        dbc.FormText('Input how many Business Entities will be in the Supply Chain')
 ]),
     html.Div([
         dbc.Label('Food Item Count'),
         dbc.Input(id='foodCount', type='number', value=10000),
-        dbc.FormText('Input how Food Items will be simulated in the Supply Chain')
+        dbc.FormText('Input how many Food Items will be simulated in the Supply Chain')
 ],
 style={"margin-top": "20px"}),
     html.Div([
