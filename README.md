@@ -40,7 +40,7 @@ In data_generation, there is a file titled simulation_functions.
 
 To use this in Python code, do:
 
-from simulation_functions import supply_chain_simulation
+`from simulation_functions import supply_chain_simulation`
 
 supply_chain_simulation is an object that has attributes:
 - entityCount (INT): the number of business entities in the supply chain 
